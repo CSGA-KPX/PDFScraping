@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PDFScraping", "PDFScraping.fsproj", "{D0CD934E-200B-4175-8FEE-500DB6FB3193}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0CD934E-200B-4175-8FEE-500DB6FB3193}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0CD934E-200B-4175-8FEE-500DB6FB3193}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0CD934E-200B-4175-8FEE-500DB6FB3193}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0CD934E-200B-4175-8FEE-500DB6FB3193}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {59D98B7F-96E7-46F9-863B-28DB9C890843}
+	EndGlobalSection
+EndGlobal
