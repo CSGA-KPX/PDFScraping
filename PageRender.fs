@@ -8,6 +8,36 @@ open System.Collections.Generic
 open PDFiumCore
 
 
+[<AutoOpen>]
+module private Helpers =
+    open System.Runtime.CompilerServices
+
+    // PdfPig and System.Drawing have different definition on Height
+
+    type UglyToad.PdfPig.Core.PdfRectangle with
+
+        member x.ToSystemDrawing(page: Bitmap, scale: float) =
+            Rectangle(
+                x.Left * scale |> int,
+                page.Height - (x.Top * scale |> int),
+                x.Width * scale |> int,
+                x.Height * scale |> int
+            )
+
+    type UglyToad.PdfPig.Core.PdfPoint with
+
+        member x.ToSystemDrawing(page: Bitmap, scale: float) =
+            let scale = float scale
+            let y = page.Height - (int (x.Y * scale))
+            let x = x.X * scale |> int
+            Point(x, y)
+
+    [<Extension>]
+    type PdfPointExtensions =
+        [<Extension>]
+        static member ToDrawings(x: UglyToad.PdfPig.Core.PdfPoint[], page: Bitmap, scale: float) =
+            x |> Array.map (fun p -> p.ToSystemDrawing(page, scale))
+
 type PageRenderCache(file: string) =
     static do fpdfview.FPDF_InitLibrary()
 
@@ -26,21 +56,32 @@ type PageRenderCache(file: string) =
 
         cache.[pageStart0]
 
+    member x.CropPage
+        (
+            pageStart1: int,
+            rect: UglyToad.PdfPig.Core.PdfRectangle,
+            polygon: UglyToad.PdfPig.Core.PdfPoint[]
+        ) =
+        let scale, page = float scale, x.GetPage(pageStart1)
+        let points = polygon.ToDrawings(page, scale)
+        let newRect = rect.ToSystemDrawing(page, scale)
+
+        use tb = new TextureBrush(page)
+        let bmp = new Bitmap(page.Width, page.Height)
+        use g = Graphics.FromImage(bmp)
+        g.Clear(Color.FromArgb(0x00FFFFFF)) // Transparent white
+        g.FillPolygon(tb, points)
+
+        use ms = new IO.MemoryStream()
+        bmp.Clone(newRect, bmp.PixelFormat).Save(ms, ImageFormat.Png)
+        ms.ToArray()
+
     member x.CropPage(pageStart1: int, rect: UglyToad.PdfPig.Core.PdfRectangle) =
         let bmp = x.GetPage(pageStart1)
-
-        let crop =
-            let scale = float scale
-
-            Rectangle(
-                rect.Left * scale |> int,
-                // PdfPig and System.Drawing have different definition on Height
-                bmp.Height - (rect.Top * scale |> int),
-                rect.Width * scale |> int,
-                rect.Height * scale |> int
-            )
-
-        bmp.Clone(crop, bmp.PixelFormat)
+        let crop = rect.ToSystemDrawing(bmp, float scale)
+        use ms = new IO.MemoryStream()
+        bmp.Clone(crop, bmp.PixelFormat).Save(ms, ImageFormat.Png)
+        ms.ToArray()
 
     member private x.RenderPage(pageStart0: int) =
         let page = fpdfview.FPDF_LoadPage(doc, pageStart0)

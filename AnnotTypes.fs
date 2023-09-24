@@ -1,8 +1,5 @@
 ﻿module AnnotTypes
 
-open System
-open System.Collections.Generic
-
 
 type Annot =
     | Highlight of page: int * text: string
@@ -11,7 +8,7 @@ type Annot =
     | StrikeOut of page: int * text: string
     | Underline of page: int * text: string
     | FreeText of page: int * text: string
-    | Square of page: int * text: string * image: Drawing.Bitmap
+    | Image of page: int * text: string * image: byte []
 
     member x.Page =
         match x with
@@ -21,4 +18,4 @@ type Annot =
         | StrikeOut(page, _) -> page
         | Underline(page, _) -> page
         | FreeText(page, _) -> page
-        | Square(page, _, _) -> page
+        | Image(page, _, _) -> page

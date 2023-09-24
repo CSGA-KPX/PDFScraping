@@ -13,6 +13,7 @@ open UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor
 open AnnotTypes
 
 
+
 type ExtractResult =
     { Path: string
       Title: string
@@ -22,7 +23,9 @@ type ExtractResult =
 let private removeSpace = Regex(@" +", RegexOptions.Compiled)
 
 let private formatText (str: string) =
+    // Normalize to remove f? i? ligatures
     let str = str.Normalize(NormalizationForm.FormKD)
+    // Remove extra spaces
     removeSpace.Replace(str, " ")
 
 let private readArea (annot: Annotations.Annotation) (words: seq<Content.Word>) =
@@ -38,9 +41,8 @@ let private readArea (annot: Annotations.Annotation) (words: seq<Content.Word>) 
     let filtered =
         words
         |> Seq.filter (fun word -> rects |> Array.exists (fun rect -> rect.IntersectsWith(word.BoundingBox)))
-        // Normalize to remove f? i? ligatures
-        // TrimEnd to remove hyphen
-        // Trim whitespaces
+        // TrimEnd to remove hyphens
+        // but will remove intended hyphen
         |> Seq.map (fun word -> word.Text.TrimEnd('-'))
 
     String.Join(' ', filtered) |> formatText
@@ -57,6 +59,7 @@ let processFile (file: string) =
         for annot in page.ExperimentalAccess.GetAnnotations() do
             match annot.Type with
             | Annotations.AnnotationType.Link -> ()
+
             | Annotations.AnnotationType.Highlight ->
                 let text = readArea annot words
 
@@ -85,12 +88,29 @@ let processFile (file: string) =
                 if not <| String.IsNullOrWhiteSpace(text) then
                     items.Add(Underline(page.Number, text))
 
+            | Annotations.AnnotationType.Polygon ->
+                // Vertices is required key, no need to check existence
+                let array = annot.AnnotationDictionary.Data.["Vertices"] :?> Tokens.ArrayToken
+
+                let points =
+                    array.Data
+                    |> Seq.map (fun item -> (item :?> Tokens.NumericToken).Double)
+                    |> Seq.chunkBySize 2
+                    |> Seq.map (fun xy ->
+                        let x, y = xy.[0], xy.[1]
+                        Core.PdfPoint(x, y))
+                    |> Seq.toArray
+
+                let bmp = render.CropPage(page.Number, annot.Rectangle, points)
+                let text = if isNull annot.Content then String.Empty else annot.Content
+                items.Add(Image(page.Number, text, bmp))
+
             | Annotations.AnnotationType.Square ->
                 let bmp = render.CropPage(page.Number, annot.Rectangle)
                 let text = if isNull annot.Content then String.Empty else annot.Content
-                items.Add(Square(page.Number, annot.Content, bmp))
-            | t -> printfn $"unknwon {t} -> {annot.Content}"
+                items.Add(Image(page.Number, text, bmp))
 
+            | t -> printfn $"unknwon {t} -> {annot.Content}"
 
     let metaData = PdfMetadata.processMetadata (doc)
 

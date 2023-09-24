@@ -40,10 +40,9 @@ let markdownFormatter (ret: TextExtractor.ExtractResult) =
             | StrikeOut(_, text) -> outFile.WriteLine($"> StrikeOut: {text}")
             | Underline(_, text) -> outFile.WriteLine($"> Underline: {text}")
             | FreeText(_, text) -> outFile.WriteLine($"> FreeText: {text}")
-            | Square(_, text, image) ->
+            | Image(_, text, bytes) ->
                 let imgFile = getImagePath ()
-                image.SetResolution(PageRender.PageRenderCache.Dpi, PageRender.PageRenderCache.Dpi)
-                image.Save(imgFile)
+                File.WriteAllBytes(imgFile, bytes)
                 let relaPath = Path.GetRelativePath(inDir, imgFile)
                 outFile.WriteLine($"> Image: ![{text}]({relaPath})")
 
@@ -57,4 +56,6 @@ let main args =
         let ret = TextExtractor.processFile (file)
         markdownFormatter ret
 
+    printfn "OK"
+    Console.ReadLine() |> ignore
     0
